@@ -1,0 +1,168 @@
+import javax.swing.*;
+import javax.swing.Timer;
+
+import java.awt.*;
+import java.awt.event.*;
+import java.util.*;
+
+public class OnlineExaminationPortal extends JFrame implements ActionListener {
+    private static final long serialVersionUID = 1L;
+
+    // Variables
+    private JPanel loginPanel, questionPanel, resultPanel;
+    private JButton loginButton, nextButton, submitButton;
+    private JTextField usernameField;
+    private JPasswordField passwordField;
+    private JLabel questionLabel, timerLabel;
+    private JRadioButton[] options;
+    private ButtonGroup optionGroup;
+
+    private int currentQuestion = 0, score = 0;
+    private String[][] questions = {
+            {"What is the capital of France?", "Paris", "London", "Berlin", "Madrid", "1"},
+            {"Who developed Java?", "Microsoft", "Oracle", "James Gosling", "Google", "3"},
+            {"What is 2+2?", "3", "4", "5", "6", "2"},
+    };
+
+    private Timer timer;
+    private int timeRemaining = 60; // Time in seconds
+
+    // Constructor
+    public OnlineExaminationPortal() {
+        setTitle("Online Examination Portal");
+        setSize(500, 400);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setLayout(new CardLayout());
+
+        // Login Panel
+        loginPanel = new JPanel(new GridLayout(3, 2, 10, 10));
+        loginPanel.add(new JLabel("Username:"));
+        usernameField = new JTextField();
+        loginPanel.add(usernameField);
+        loginPanel.add(new JLabel("Password:"));
+        passwordField = new JPasswordField();
+        loginPanel.add(passwordField);
+        loginButton = new JButton("Login");
+        loginButton.addActionListener(this);
+        loginPanel.add(loginButton);
+        add(loginPanel);
+
+        // Question Panel
+        questionPanel = new JPanel(new BorderLayout());
+        questionLabel = new JLabel("Question will appear here");
+        questionPanel.add(questionLabel, BorderLayout.NORTH);
+
+        JPanel optionPanel = new JPanel(new GridLayout(4, 1));
+        options = new JRadioButton[4];
+        optionGroup = new ButtonGroup();
+        for (int i = 0; i < 4; i++) {
+            options[i] = new JRadioButton();
+            optionGroup.add(options[i]);
+            optionPanel.add(options[i]);
+        }
+        questionPanel.add(optionPanel, BorderLayout.CENTER);
+
+        JPanel navigationPanel = new JPanel(new FlowLayout());
+        nextButton = new JButton("Next");
+        nextButton.addActionListener(this);
+        submitButton = new JButton("Submit");
+        submitButton.addActionListener(this);
+        navigationPanel.add(nextButton);
+        navigationPanel.add(submitButton);
+        questionPanel.add(navigationPanel, BorderLayout.SOUTH);
+
+        timerLabel = new JLabel("Time left: " + timeRemaining + "s", SwingConstants.RIGHT);
+        questionPanel.add(timerLabel, BorderLayout.EAST);
+
+        // Timer
+        timer = new Timer(1000, e -> {
+            timeRemaining--;
+            timerLabel.setText("Time left: " + timeRemaining + "s");
+            if (timeRemaining <= 0) {
+                timer.stop();
+                showResult();
+            }
+        });
+
+        add(questionPanel);
+
+        // Result Panel
+        resultPanel = new JPanel(new GridLayout(2, 1, 10, 10));
+    }
+
+    // Event Handling
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == loginButton) {
+            String username = usernameField.getText();
+            String password = new String(passwordField.getPassword());
+            if (username.equals("admin") && password.equals("password")) {
+                switchToQuestionPanel();
+            } else {
+                JOptionPane.showMessageDialog(this, "Invalid username or password");
+            }
+        } else if (e.getSource() == nextButton) {
+            checkAnswer();
+            if (currentQuestion < questions.length - 1) {
+                currentQuestion++;
+                loadQuestion();
+            } else {
+                nextButton.setEnabled(false);
+            }
+        } else if (e.getSource() == submitButton) {
+            timer.stop();
+            checkAnswer();
+            showResult();
+        }
+    }
+
+    // Load Question
+    private void loadQuestion() {
+        String[] q = questions[currentQuestion];
+        questionLabel.setText((currentQuestion + 1) + ". " + q[0]);
+        for (int i = 0; i < 4; i++) {
+            options[i].setText(q[i + 1]);
+        }
+        optionGroup.clearSelection();
+    }
+
+    // Check Answer
+    private void checkAnswer() {
+        String correctAnswer = questions[currentQuestion][5];
+        for (int i = 0; i < 4; i++) {
+            if (options[i].isSelected() && (i + 1) == Integer.parseInt(correctAnswer)) {
+                score++;
+            }
+        }
+    }
+
+    // Switch to Question Panel
+    private void switchToQuestionPanel() {
+        remove(loginPanel);
+        add(questionPanel);
+        loadQuestion();
+        timer.start();
+        revalidate();
+        repaint();
+    }
+
+    // Show Result
+    private void showResult() {
+        remove(questionPanel);
+        JLabel resultLabel = new JLabel("Your Score: " + score + "/" + questions.length, SwingConstants.CENTER);
+        resultLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        resultPanel.add(resultLabel);
+        add(resultPanel);
+        revalidate();
+        repaint();
+    }
+
+    // Main Method
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            OnlineExaminationPortal portal = new OnlineExaminationPortal();
+            portal.setVisible(true);
+        });
+    }
+}
